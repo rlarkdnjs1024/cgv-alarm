@@ -1,5 +1,6 @@
 import { chromium } from "playwright";
-import {getOpenDateList} from "./functions.js";
+import {getMovieInfoWithDate, getOpenDateList} from "./functions.js";
+import type {MovieInfo} from "./type.js";
 
 //용산 아이맥스관 식별 코드
 const SITE_NO = "0013";
@@ -7,8 +8,8 @@ const SITE_NO = "0013";
 //영화 오디세이 식별 코드
 const MOVIE_NO = "30001323";
 
-//CGV URL
-const BASE_PATH = "https://cgv.co.kr"
+// 알람을 받을 최소의 좌석 개수   ,
+const MINIMUM_SEAT_COUNT = 7;
 
 
 async function sleep(s: number) {
@@ -25,34 +26,48 @@ async function main() {
     // CGV origin + 브라우저 세션 확보
     await page.goto(`https://cgv.co.kr/cnm/movieBook/movie`);
 
-    //page.evaluate()는 함수를 브라우저에서 실행시킴. 이때 함수와 매개변수를 직렬화하여 브라우저에 전달한다.
     const openDates = await page.evaluate(getOpenDateList, {
         siteNo: SITE_NO,
         movNo: MOVIE_NO,
     });
 
+    if (!openDates.ok) {
+        console.error(openDates.error);
+        return;
+    }
+
     console.dir(openDates, { depth: null });
 
-    const movieInfos = await page.evaluate(async (url) => {
+    //여기에 이전과 비교해서 새로 생긴 회차가 있을시 (에매 오픈) 알림기능 추가
 
-        const response = await fetch(url);
+    const dateList = openDates.data;
 
-        if (!response.ok) {
+    if (dateList.length === 0) return;
 
-            throw new Error(`HTTP ${response.status}`);
+    let desired: MovieInfo[] = [];
+    for (let i = 0; i < openDates.data.length; i++) {
+        const targetDate = dateList[i]!;
+        const movieInfos = await page.evaluate(getMovieInfoWithDate, {
+            siteNo: SITE_NO,
+            movNo: MOVIE_NO,
+            date: targetDate
+        });
 
+        if (!movieInfos.ok) {
+            console.warn(`failed to fetch  movie info for ${targetDate}`, movieInfos.error);
+            continue;
         }
 
-        return response.json();
+        //장애인 좌석 제외한 좌석이 남아있고, 아이맥스인 경우만 필터링
+        const filtered = movieInfos.data
+            .filter(x => parseInt(x.frSeatCnt) >= MINIMUM_SEAT_COUNT && x.scnsNo === "018");
 
-    }, getMovieInfoListUrl);
+        desired = [...desired, ...filtered];
+    }
 
-    console.dir(movieInfos, { depth: null });
-
-
+    console.log(desired);
     await browser.close();
-
 }
 
-main();
+main().catch(console.error);
 

@@ -1,14 +1,4 @@
-//용산 아이맥스관 식별 코드
 import type {CgvResponse, MovieInfo, OpenDate} from "./type.js";
-import {NetworkError, ValidationError} from "./errors.js";
-
-const SITE_NO = "0013";
-
-//영화 오디세이 식별 코드
-const MOVIE_NO = "30001323";
-
-//CGV URL
-const API_BASE_PATH = "https://cgv.co.kr/api/v1"
 
 type GetOpenDateListProps = { siteNo: string, movNo: string }
 type GetOpenDateListOutput = {
@@ -20,9 +10,9 @@ type GetOpenDateListOutput = {
 };
 
 export async function getOpenDateList({siteNo, movNo}: GetOpenDateListProps): Promise<GetOpenDateListOutput> {
-    const url = new URL("/booking/searchSiteScnscYmdListByMov", API_BASE_PATH);
-    url.searchParams.set("siteNo", SITE_NO);
-    url.searchParams.set("movNo", MOVIE_NO);
+    const url = new URL("https://cgv.co.kr/api/v1/booking/searchSiteScnscYmdListByMov");
+    url.searchParams.set("siteNo", siteNo);
+    url.searchParams.set("movNo", movNo);
     url.searchParams.set("coCd", "A420");
 
     let response;
@@ -38,6 +28,13 @@ export async function getOpenDateList({siteNo, movNo}: GetOpenDateListProps): Pr
         return {
             ok: false,
             error: "Failed to fetch OpenDate"
+        }
+    }
+
+    if (!response.ok) {
+        return {
+            ok: false,
+            error: `Failed to fetch OpenDate: HTTP ${response.status}`
         }
     }
 
@@ -65,34 +62,65 @@ export async function getOpenDateList({siteNo, movNo}: GetOpenDateListProps): Pr
 }
 
 
-type GetMovieInfoWithDateProps = {siteNo: string, movieNo: string, date: string}
+type GetMovieInfoWithDateProps = { siteNo: string, movNo: string, date: string }
+type GetMovieInfoWithDateOutput = {
+    ok: true,
+    data: MovieInfo[]
+} | {
+    ok: false,
+    error: string
+};
 
-export async function getMovieInfoWithDate({siteNo, movieNo, date}: GetMovieInfoWithDateProps): Promise<MovieInfo[]> {
-
-    const url = new URL("/booking/searchSchByMov", API_BASE_PATH);
+export async function getMovieInfoWithDate({siteNo, movNo, date}: GetMovieInfoWithDateProps): Promise<GetMovieInfoWithDateOutput> {
+    const url = new URL("https://cgv.co.kr/api/v1/booking/searchSchByMov");
     url.searchParams.set("siteNo", siteNo);
-    url.searchParams.set("movNo", movieNo);
+    url.searchParams.set("movNo", movNo);
     url.searchParams.set("scnYmd", date);
     url.searchParams.set("coCd", "A420");
+
     url.searchParams.set("rtctlScopCd", "08");
 
     let response;
     try {
         response = await fetch(url);
     } catch (e) {
-        const error = e as Error;
-        throw new NetworkError("Failed to fetch");
+        if (e instanceof Error) {
+            return {
+                ok: false,
+                error: e.message
+            }
+        }
+        return {
+            ok: false,
+            error: "Failed to fetch MovieInfo"
+        }
+    }
+
+    if (!response.ok) {
+        return {
+            ok: false,
+            error: `Failed to fetch MovieInfo: HTTP ${response.status}`
+        }
     }
 
     let json: CgvResponse<MovieInfo>;
     try {
         json = await response.json();
     } catch (e) {
-        const error = e as Error;
-        throw new ValidationError("data is not json");
+        if (e instanceof Error) {
+            return {
+                ok: false,
+                error: e.message
+            }
+        }
+        return {
+            ok: false,
+            error: "Failed to parse json"
+        }
     }
 
-    const result = json.data
-    return result;
-
+    return {
+        ok: true,
+        data: json.data
+    };
 }
