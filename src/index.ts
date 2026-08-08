@@ -77,8 +77,8 @@ async function main() {
             console.log(`예매 가능 날짜 조회 완료.`);
 
             if (dateList.length === 0) {
-                console.log("예매 가능 날짜가 없으므로 종료합니다.");
-                return;
+                console.log("예매 가능 날짜가 없으므로 다음 반복으로 넘어갑니다.");
+                continue;
             }
 
 
@@ -131,8 +131,8 @@ async function main() {
             }
 
             if (desired.length === 0) {
-                console.log("전체 기간 중 예매 가능한 회차가 없으므로 종료합니다.");
-                return;
+                console.log("전체 기간 중 예매 가능한 회차가 없으므로 다음 반복으로 넘어갑니다.");
+                continue;
             }
 
             console.log(`예매 가능한 회차가 총 ${desired.length}개 있습니다.`);
@@ -148,7 +148,7 @@ async function main() {
             console.error("에러가 발생해서 반복을 빠져나왔습니다.");
         } finally {
             console.log("----------------------------");
-            await sleep(2 * 60);
+            await sleep(60);
         }
     }
 }
