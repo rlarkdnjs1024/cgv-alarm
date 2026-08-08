@@ -20,10 +20,11 @@
   },
   "homepage": "https://github.com/rlarkdnjs1024/cgv-macro#readme",
   "dependencies": {
+    "dotenv": "^17.4.2",
     "playwright": "^1.62.1"
   },
   "devDependencies": {
-    "@types/node": "^26.1.2",
+    "@types/node": "^26.2.0",
     "tsx": "^4.23.10",
     "typescript": "^7.0.2"
   }
