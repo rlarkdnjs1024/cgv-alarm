@@ -1,7 +1,4 @@
-import type {CgvResponse, MovieInfo, OpenDate, State} from "./type.js";
-import {readFile, writeFile} from "node:fs/promises";
-import "dotenv/config";
-import {chromium} from "playwright";
+import type {CgvResponse, MovieInfo, OpenDate} from "./type.js";
 
 type GetOpenDateListProps = { siteNo: string, movNo: string }
 type GetOpenDateListOutput = {
@@ -126,54 +123,4 @@ export async function getMovieInfoWithDate({siteNo, movNo, date}: GetMovieInfoWi
         ok: true,
         data: json.data
     };
-}
-
-const STATE_FILE = "./state.json";
-
-export async function readState() {
-    try {
-        const text = await readFile(STATE_FILE, "utf-8");
-        return JSON.parse(text) as State;
-    } catch {
-        return null;
-    }
-}
-
-export async function writeState(state: State) {
-    await writeFile(STATE_FILE, JSON.stringify(state, null, 2))
-}
-
-export async function sendDiscordMessage(message: string) {
-    const webhookUrl = process.env.DISCORD_WEBHOOK_URL!;
-
-    const response = await fetch(webhookUrl, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            content: message,
-        }),
-    });
-
-    if (!response.ok) {
-        throw new Error(
-            `Failed to send Discord message: HTTP ${response.status}`
-        );
-    }
-}
-
-export async function sleep(s: number) {
-    return new Promise(resolve => setTimeout(resolve, s * 1000));
-}
-
-export function formatDesiredMessage(list: MovieInfo[]): string {
-    const lines = list.map(x => {
-        const date = `${x.scnYmd.slice(0, 4)}-${x.scnYmd.slice(4, 6)}-${x.scnYmd.slice(6, 8)}`;
-        const startTime = `${x.scnsrtTm.slice(0, 2)}:${x.scnsrtTm.slice(2, 4)}`;
-        const endTime = `${x.scnendTm.slice(0, 2)}:${x.scnendTm.slice(2, 4)}`;
-        return `• ${date} ${startTime}~${endTime} (${x.expoScnsNm}) 잔여 ${x.frSeatCnt}/${x.stcnt}석`;
-    });
-
-    return `🎟️ 예매 가능한 회차 (${list.length}건)\n${lines.join("\n")}`;
 }

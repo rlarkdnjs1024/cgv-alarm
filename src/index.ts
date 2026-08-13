@@ -1,14 +1,10 @@
 import { chromium } from "playwright";
-import {
-    formatDesiredMessage,
-    getMovieInfoWithDate,
-    getOpenDateList,
-    readState,
-    sendDiscordMessage, sleep,
-    writeState
-} from "./functions.js";
-import type {MovieInfo} from "./type.js";
 import "dotenv/config";
+import {readState, writeState} from "./state/state.js";
+import {getMovieInfoWithDate, getOpenDateList} from "./cgv/cgv.js";
+import {formatDesiredMessage, sendDiscordMessage} from "./notification/notification.js";
+import type {MovieInfo} from "./cgv/type.js";
+import {sleep} from "./utils.js";
 
 
 //용산 아이맥스관 식별 코드

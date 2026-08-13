@@ -3,4 +3,4 @@ node_modules/
 dist/
 playwright-report/
 test-results/
-state.json
+src/state/state.json

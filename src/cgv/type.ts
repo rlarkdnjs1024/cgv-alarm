@@ -51,7 +51,3 @@ export type MovieInfo = {
     /** 잔여 좌석 수 ex) 6 */
     frSeatCnt: string
 }
-
-export type State  = {
-    lastOpenDate: string,
-}
