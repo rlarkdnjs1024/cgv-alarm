@@ -1,7 +1,7 @@
 import { chromium } from "playwright";
 import "dotenv/config";
 import {readState, writeState} from "./state/state.js";
-import {getMovieInfoWithDate, getOpenDateList} from "./cgv/cgv.js";
+import {getMovieInfoWithDate, getOpenDateList, isNewDateOpen} from "./cgv/cgv.js";
 import {formatDesiredMessage, sendDiscordMessage} from "./notification/notification.js";
 import type {MovieInfo} from "./cgv/type.js";
 import {sleep} from "./utils.js";
@@ -78,25 +78,29 @@ async function main() {
             }
 
 
-            let previousLastOpenDate = state?.lastOpenDate!;
             dateList.sort((a, b) => a.localeCompare(b));
-            const lastOpenDate = dateList.at(-1)!;
+            const newLastOpenDate = dateList.at(-1)!;
+
+            if (!state) {
+                state = {
+                    lastOpenDate: newLastOpenDate
+                };
+            }
+
+            let previousLastOpenDate = state.lastOpenDate;
 
             console.dir(dateList, { depth: null });
             console.log(`이전 최신 예매 오픈 날짜: ${previousLastOpenDate}`);
-            console.log(`최신 예매 오픈 날짜: ${lastOpenDate}`);
+            console.log(`최신 예매 오픈 날짜: ${newLastOpenDate}`);
 
             //요청을 받아서 가져온 가장 나중의 예매 오픈 날짜가 이전의 값보다 나중일떄
-            if (lastOpenDate > previousLastOpenDate) {
+            if (previousLastOpenDate && isNewDateOpen(previousLastOpenDate, newLastOpenDate)) {
                 console.log("새로운 예매 회차가 열렸습니다.");
                 //알람 기능
-                await sendDiscordMessage(`🔥 CGV 예매 오픈! \n 새로운 예매 회차가 열렸습니다. ~${lastOpenDate}`);
+                await sendDiscordMessage(`🔥 CGV 예매 오픈! \n 새로운 예매 회차가 열렸습니다. ~${newLastOpenDate}`);
                 console.log("알람 발송 완료")
             }
 
-            state = {
-                lastOpenDate: lastOpenDate
-            };
             await writeState(state);
 
             let desired: MovieInfo[] = [];

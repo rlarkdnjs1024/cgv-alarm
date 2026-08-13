@@ -1,7 +1,7 @@
 /**
  * CGV API 공통 응답 형식
  */
-export type CgvResponse<T> = {
+export type CgvResponsePrimitive<T> = {
     /** HTTP 상태 코드 */
     statusCode: number,
 
@@ -10,6 +10,14 @@ export type CgvResponse<T> = {
 
     /** 응답 데이터 목록 */
     data: T[],
+}
+
+export type CgvResponse<T> = {
+    ok: false,
+    error: string
+} | {
+    ok: true,
+    data: T,
 }
 
 /**

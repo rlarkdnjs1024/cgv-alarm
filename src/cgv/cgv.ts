@@ -1,15 +1,11 @@
-import type {CgvResponse, MovieInfo, OpenDate} from "./type.js";
+import type {CgvResponse, CgvResponsePrimitive, MovieInfo, OpenDate} from "./type.js";
+
+function getErrorMessage(e: unknown, fallback: string): string {
+    return e instanceof Error ? e.message : fallback;
+}
 
 type GetOpenDateListProps = { siteNo: string, movNo: string }
-type GetOpenDateListOutput = {
-    ok: true,
-    data: string[]
-} | {
-    ok: false,
-    error: string
-};
-
-export async function getOpenDateList({siteNo, movNo}: GetOpenDateListProps): Promise<GetOpenDateListOutput> {
+export async function getOpenDateList({siteNo, movNo}: GetOpenDateListProps): Promise<CgvResponse<string[]>> {
     const url = new URL("https://cgv.co.kr/api/v1/booking/searchSiteScnscYmdListByMov");
     url.searchParams.set("siteNo", siteNo);
     url.searchParams.set("movNo", movNo);
@@ -19,15 +15,9 @@ export async function getOpenDateList({siteNo, movNo}: GetOpenDateListProps): Pr
     try {
         response = await fetch(url);
     } catch (e) {
-        if (e instanceof Error) {
-            return {
-                ok: false,
-                error: e.message
-            }
-        }
         return {
             ok: false,
-            error: "Failed to fetch OpenDate"
+            error: getErrorMessage(e, "Failed to fetch OpenDate")
         }
     }
 
@@ -38,19 +28,13 @@ export async function getOpenDateList({siteNo, movNo}: GetOpenDateListProps): Pr
         }
     }
 
-    let json: CgvResponse<OpenDate>;
+    let json: CgvResponsePrimitive<OpenDate>;
     try {
         json = await response.json();
     } catch (e) {
-        if (e instanceof Error) {
-            return {
-                ok: false,
-                error: e.message
-            }
-        }
         return {
             ok: false,
-            error: "Failed to parse json"
+            error: getErrorMessage(e, "Failed to parse json")
         }
     }
 
@@ -63,15 +47,8 @@ export async function getOpenDateList({siteNo, movNo}: GetOpenDateListProps): Pr
 
 
 type GetMovieInfoWithDateProps = { siteNo: string, movNo: string, date: string }
-type GetMovieInfoWithDateOutput = {
-    ok: true,
-    data: MovieInfo[]
-} | {
-    ok: false,
-    error: string
-};
 
-export async function getMovieInfoWithDate({siteNo, movNo, date}: GetMovieInfoWithDateProps): Promise<GetMovieInfoWithDateOutput> {
+export async function getMovieInfoWithDate({siteNo, movNo, date}: GetMovieInfoWithDateProps): Promise<CgvResponse<MovieInfo[]>> {
     const url = new URL("https://cgv.co.kr/api/v1/booking/searchSchByMov");
     url.searchParams.set("siteNo", siteNo);
     url.searchParams.set("movNo", movNo);
@@ -84,15 +61,9 @@ export async function getMovieInfoWithDate({siteNo, movNo, date}: GetMovieInfoWi
     try {
         response = await fetch(url);
     } catch (e) {
-        if (e instanceof Error) {
-            return {
-                ok: false,
-                error: e.message
-            }
-        }
         return {
             ok: false,
-            error: "Failed to fetch MovieInfo"
+            error: getErrorMessage(e, "Failed to fetch MovieInfo")
         }
     }
 
@@ -103,19 +74,13 @@ export async function getMovieInfoWithDate({siteNo, movNo, date}: GetMovieInfoWi
         }
     }
 
-    let json: CgvResponse<MovieInfo>;
+    let json: CgvResponsePrimitive<MovieInfo>;
     try {
         json = await response.json();
     } catch (e) {
-        if (e instanceof Error) {
-            return {
-                ok: false,
-                error: e.message
-            }
-        }
         return {
             ok: false,
-            error: "Failed to parse json"
+            error: getErrorMessage(e, "Failed to parse json")
         }
     }
 
@@ -123,4 +88,8 @@ export async function getMovieInfoWithDate({siteNo, movNo, date}: GetMovieInfoWi
         ok: true,
         data: json.data
     };
+}
+
+export function isNewDateOpen(prevLastOpenDate: string, newLastOpenDate: string) {
+    return prevLastOpenDate < newLastOpenDate;
 }
