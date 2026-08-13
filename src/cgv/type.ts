@@ -12,14 +12,6 @@ export type CgvResponsePrimitive<T> = {
     data: T[],
 }
 
-export type CgvResponse<T> = {
-    ok: false,
-    error: string
-} | {
-    ok: true,
-    data: T,
-}
-
 /**
  * 예매 오픈 정보
  */

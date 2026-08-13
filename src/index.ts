@@ -6,7 +6,6 @@ import {formatDesiredMessage, sendDiscordMessage} from "./notification/notificat
 import type {MovieInfo} from "./cgv/type.js";
 import {sleep} from "./utils.js";
 
-
 //용산 아이맥스관 식별 코드
 const SITE_NO = "0013";
 
@@ -18,8 +17,6 @@ const MINIMUM_SEAT_COUNT = 7;
 
 // 원하는 관 번호 리스트
 const SCREEN_NO_LIST = ["018", ]
-
-
 
 
 async function main() {
@@ -62,24 +59,16 @@ async function main() {
                 siteNo: SITE_NO,
                 movNo: MOVIE_NO,
             });
-
-            if (!openDates.ok) {
-                console.error(openDates.error);
-                return;
-            }
-
-
-            const dateList = openDates.data;
             console.log(`예매 가능 날짜 조회 완료.`);
 
-            if (dateList.length === 0) {
+            if (openDates.length === 0) {
                 console.log("예매 가능 날짜가 없으므로 다음 반복으로 넘어갑니다.");
                 continue;
             }
 
 
-            dateList.sort((a, b) => a.localeCompare(b));
-            const newLastOpenDate = dateList.at(-1)!;
+            openDates.sort((a, b) => a.localeCompare(b));
+            const newLastOpenDate = openDates.at(-1)!;
 
             if (!state) {
                 state = {
@@ -89,7 +78,7 @@ async function main() {
 
             let previousLastOpenDate = state.lastOpenDate;
 
-            console.dir(dateList, { depth: null });
+            console.dir(openDates, { depth: null });
             console.log(`이전 최신 예매 오픈 날짜: ${previousLastOpenDate}`);
             console.log(`최신 예매 오픈 날짜: ${newLastOpenDate}`);
 
@@ -104,30 +93,30 @@ async function main() {
             await writeState(state);
 
             let desired: MovieInfo[] = [];
-            for (let i = 0; i < openDates.data.length; i++) {
-                const targetDate = dateList[i]!;
-                const movieInfos = await page.evaluate(getMovieInfoWithDate, {
-                    siteNo: SITE_NO,
-                    movNo: MOVIE_NO,
-                    date: targetDate
-                });
+            for (let i = 0; i < openDates.length; i++) {
+                try {
+                    const targetDate = openDates[i]!;
+                    const movieInfos = await page.evaluate(getMovieInfoWithDate, {
+                        siteNo: SITE_NO,
+                        movNo: MOVIE_NO,
+                        date: targetDate
+                    });
 
-                if (!movieInfos.ok) {
-                    console.warn(`${targetDate}의 예매 정보를 불러오는데 실패했습니다.`, movieInfos.error);
-                    continue;
+                    //장애인 좌석 제외한 좌석이 남아있고, 아이맥스인 경우만 필터링
+                    const filtered = movieInfos
+                        .filter(x => parseInt(x.frSeatCnt ?? "0") >= MINIMUM_SEAT_COUNT && SCREEN_NO_LIST.includes(x.scnsNo));
+
+                    console.log(
+                        filtered.length > 0 ?
+                            `${targetDate}에 예매 가능한 회차가 ${filtered.length}개 있습니다.` :
+                            `${targetDate}에 예매 가능한 회차가 없습니다.`
+                    );
+
+                    desired = [...desired, ...filtered];
+                } catch (e) {
+                    console.warn("영화 회차 정보 조회에 실패하였습니다.", e);
                 }
 
-                //장애인 좌석 제외한 좌석이 남아있고, 아이맥스인 경우만 필터링
-                const filtered = movieInfos.data
-                    .filter(x => parseInt(x.frSeatCnt ?? "0") >= MINIMUM_SEAT_COUNT && SCREEN_NO_LIST.includes(x.scnsNo));
-
-                console.log(
-                    filtered.length > 0 ?
-                        `${targetDate}에 예매 가능한 회차가 ${filtered.length}개 있습니다.` :
-                        `${targetDate}에 예매 가능한 회차가 없습니다.`
-                );
-
-                desired = [...desired, ...filtered];
             }
 
             if (desired.length === 0) {
@@ -145,9 +134,10 @@ async function main() {
             await sendDiscordMessage(formatDesiredMessage(desired));
 
         } catch(e) {
-            console.error("에러가 발생해서 반복을 빠져나왔습니다.");
+            console.error("예상치 못 한 에러가 발생해서 반복을 빠져나왔습니다.", e);
         } finally {
-            console.log("----------------------------");
+            console.log("------------------------------------" +
+                "-");
             await sleep(60);
         }
     }
