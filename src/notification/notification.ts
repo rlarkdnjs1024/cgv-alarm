@@ -30,3 +30,8 @@ export async function sendDiscordMessage(message: string) {
         );
     }
 }
+
+export function needRoutineMessage(lastMessageSentAt: number): boolean {
+    const now = Date.now();
+    return now - lastMessageSentAt > 60 * 60 * 1000;
+}

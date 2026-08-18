@@ -2,9 +2,9 @@ import { chromium } from "playwright";
 import "dotenv/config";
 import {readState, writeState} from "./state/state.js";
 import {getMovieInfoWithDate, getOpenDateList, isNewDateOpen} from "./cgv/cgv.js";
-import {formatDesiredMessage, sendDiscordMessage} from "./notification/notification.js";
+import {formatDesiredMessage, needRoutineMessage, sendDiscordMessage} from "./notification/notification.js";
 import type {MovieInfo} from "./cgv/type.js";
-import {sleep} from "./utils.js";
+import {logTimestamp, sleep} from "./utils.js";
 
 //용산 아이맥스관 식별 코드
 const SITE_NO = "0013";
@@ -22,6 +22,7 @@ const SCREEN_NO_LIST = ["018", ]
 async function main() {
     let browser;
     let state = await readState();
+    let lastMessageSentAt;
     console.log("프로세스 시작. state:");
     console.dir(state);
 
@@ -53,8 +54,15 @@ async function main() {
     await page.goto(`https://cgv.co.kr/cnm/movieBook/movie`);
 
     while (true) {
+        logTimestamp();
         console.log("새로운 반복 시작");
+
         try {
+            if (!lastMessageSentAt || needRoutineMessage(lastMessageSentAt)) {
+                await sendDiscordMessage("마지막 메세지로부터 한 시간이 경과하여 메세지를 자동 전송합니다.");
+                lastMessageSentAt = Date.now();
+            }
+
             const openDates = await page.evaluate(getOpenDateList, {
                 siteNo: SITE_NO,
                 movNo: MOVIE_NO,
@@ -87,6 +95,7 @@ async function main() {
                 console.log("새로운 예매 회차가 열렸습니다.");
                 //알람 기능
                 await sendDiscordMessage(`🔥 CGV 예매 오픈! \n 새로운 예매 회차가 열렸습니다. ~${newLastOpenDate}`);
+                lastMessageSentAt = Date.now();
                 console.log("알람 발송 완료")
             }
 
@@ -131,6 +140,7 @@ async function main() {
         `));
 
             await sendDiscordMessage(formatDesiredMessage(desired));
+            lastMessageSentAt = Date.now();
 
         } catch(e) {
             console.error(e);
