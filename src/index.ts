@@ -116,7 +116,6 @@ async function main() {
                 } catch (e) {
                     console.warn("영화 회차 정보 조회에 실패하였습니다.", e);
                 }
-
             }
 
             if (desired.length === 0) {
@@ -134,10 +133,10 @@ async function main() {
             await sendDiscordMessage(formatDesiredMessage(desired));
 
         } catch(e) {
-            console.error("예상치 못 한 에러가 발생해서 반복을 빠져나왔습니다.", e);
+            console.error(e);
+            console.log("예상치 못 한 에러가 발생해서 반복을 빠져나왔습니다.");
         } finally {
-            console.log("------------------------------------" +
-                "-");
+            console.log("------------------------------------");
             await sleep(60);
         }
     }
